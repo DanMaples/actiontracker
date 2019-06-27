@@ -1,6 +1,5 @@
 package actiontracker
 
-const MaxUint = maxUint
 const TooManyValuesError = tooManyValuesError
 
 func NewMaxedCountActionTracker(actionKey string) ActionTracker {

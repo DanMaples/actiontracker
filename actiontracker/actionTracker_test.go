@@ -44,6 +44,8 @@ func TestMaxActionsHaveBeenAddedReturnsError(t *testing.T) {
 	}
 	err = tracker.AddAction(actionName, 1)
 	if actiontracker.TooManyValuesError != err.Error() {
-		t.Fatalf("expected error of '%s', but recieved '%s' instead", actiontracker.TooManyValuesError, err.Error())
+		t.Fatalf("expected error of '%s', but recieved '%s' instead",
+			actiontracker.TooManyValuesError,
+			err.Error())
 	}
 }
