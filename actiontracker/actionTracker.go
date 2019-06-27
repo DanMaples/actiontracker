@@ -10,6 +10,8 @@ import (
 const maxUint = ^uint(0)
 const tooManyValuesError = "can't continue to track action, too many values have been added to track"
 
+var marshalJSON = json.Marshal
+
 //ActionTracker is the interface for an actionTracker
 type ActionTracker interface {
 	AddAction(string) error
@@ -66,7 +68,7 @@ func (ati *actionTrackerImpl) GetStats() string {
 		output = append(output, &statsOutput{Action: actionAverageName, Avg: theActionAverage.value})
 	}
 	ati.RUnlock()
-	statsBytes, err := json.Marshal(output)
+	statsBytes, err := marshalJSON(output)
 	if err != nil {
 		panic(fmt.Sprintf("programming error detected: %+v", err))
 	}

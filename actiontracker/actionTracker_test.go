@@ -1,6 +1,7 @@
 package actiontracker_test
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 
@@ -59,6 +60,20 @@ func TestInputValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetStatsPanicsIfJSONIsUnmarshallable(t *testing.T) {
+	oldMarshalJSON := *actiontracker.MarshalJSON
+	defer func() { *actiontracker.MarshalJSON = oldMarshalJSON }()
+	*actiontracker.MarshalJSON = func(interface{}) ([]byte, error) { return nil, fmt.Errorf("I had an error") }
+	defer func() {
+		recoveryValue := recover()
+		if recoveryValue == nil {
+			t.Fatal("GetStats did not convert error to panic")
+		}
+	}()
+	tracker := actiontracker.New()
+	tracker.GetStats()
 }
 
 func TestMaxActionsHaveBeenAddedReturnsError(t *testing.T) {
