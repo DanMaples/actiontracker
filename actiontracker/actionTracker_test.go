@@ -9,12 +9,19 @@ import (
 )
 
 func TestActionTrackerKeepsCorrectAverage(t *testing.T) {
-	//TODO: check report is correct
-	// tracker := actiontracker.New()
-	// tracker.AddAction("jump", 100)
-	// tracker.AddAction("jump", 200)
-	// tracker.AddAction("jump", 300)
-	// report := tracker.GetStats()
+	tracker := actiontracker.New()
+	tracker.AddAction(`{"action":"jump", "time":100}`)
+	tracker.AddAction(`{"action":"run", "time":100}`)
+	tracker.AddAction(`{"action":"jump", "time":200}`)
+	tracker.AddAction(`{"action":"run", "time":0}`)
+	tracker.AddAction(`{"action":"run", "time":50}`)
+	tracker.AddAction(`{"action":"jump", "time":300}`)
+
+	actualStats := tracker.GetStats()
+	const expectedStats = `[{"action":"jump","avg":200},{"action":"run","avg":50}]`
+	if expectedStats != actualStats {
+		t.Fatalf("expected stats : %s did not match actual stats : %s", expectedStats, actualStats)
+	}
 }
 
 func TestActionTrackerConcurencey(t *testing.T) {
@@ -32,7 +39,7 @@ func TestActionTrackerConcurencey(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	//TODO: check report is correct
+	//TODO: check report is correct - need to figure out rounding first though...
 	t.Logf(tracker.GetStats())
 }
 

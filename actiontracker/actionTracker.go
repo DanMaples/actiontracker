@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 )
 
@@ -18,14 +19,14 @@ type ActionTracker interface {
 	GetStats() string
 }
 
-//actionInput is a struct used to parse raw json into
-type actionInput struct {
+//addActionInput is a struct used to parse raw json into
+type addActionInput struct {
 	Action string  `json:"action"`
 	Time   float64 `json:"time"`
 }
 
-//statsOutput is a struct used to parse output data into json
-type statsOutput struct {
+//getStatsOutput is a struct used to parse output data into json
+type getStatsOutput struct {
 	Action string  `json:"action"`
 	Avg    float64 `json:"avg"`
 }
@@ -44,7 +45,7 @@ type actionTrackerImpl struct {
 
 //AddAction will add an action
 func (ati *actionTrackerImpl) AddAction(rawInput string) error {
-	var parsedInput actionInput
+	var parsedInput addActionInput
 	if err := json.Unmarshal([]byte(rawInput), &parsedInput); err != nil {
 		return err
 	}
@@ -62,10 +63,11 @@ func (ati *actionTrackerImpl) AddAction(rawInput string) error {
 
 //GetStats will get the stats
 func (ati *actionTrackerImpl) GetStats() string {
-	output := make([]*statsOutput, 0)
+	output := make([]*getStatsOutput, 0)
 	ati.RLock()
-	for actionAverageName, theActionAverage := range ati.actions {
-		output = append(output, &statsOutput{Action: actionAverageName, Avg: theActionAverage.value})
+	sortedActions := ati.getSortedActions()
+	for _, action := range sortedActions {
+		output = append(output, &getStatsOutput{Action: action, Avg: ati.actions[action].value})
 	}
 	ati.RUnlock()
 	statsBytes, err := marshalJSON(output)
@@ -75,7 +77,26 @@ func (ati *actionTrackerImpl) GetStats() string {
 	return string(statsBytes)
 }
 
+func (ati *actionTrackerImpl) getSortedActions() []string {
+	actions := make([]string, len(ati.actions))
+	index := 0
+	for action := range ati.actions {
+		actions[index] = action
+		index++
+	}
+	sort.Strings(actions)
+	return actions
+}
+
 //New will create a new ActionTracker
 func New() ActionTracker {
 	return &actionTrackerImpl{actions: make(map[string]*actionAverage)}
 }
+
+/*TODO:
+read over problem statement again for details
+fill out readme
+figure out rounding
+rename a bunch of stuff
+improve comments
+*/
