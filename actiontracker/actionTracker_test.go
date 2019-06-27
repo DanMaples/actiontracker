@@ -43,7 +43,7 @@ func TestMaxActionsHaveBeenAddedReturnsError(t *testing.T) {
 		t.Fatalf("recieved unexpected err: %+v", err)
 	}
 	err = tracker.AddAction(actionName, 1)
-	if err == nil {
-		t.Fatalf("did not recieve error when one was expected")
+	if actiontracker.TooManyValuesError != err.Error() {
+		t.Fatalf("expected error of '%s', but recieved '%s' instead", actiontracker.TooManyValuesError, err.Error())
 	}
 }

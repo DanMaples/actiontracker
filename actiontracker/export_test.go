@@ -1,9 +1,7 @@
 package actiontracker
 
 const MaxUint = maxUint
-
-type ActionTrackerImpl = actionTrackerImpl
-type ActionAverage = actionAverage
+const TooManyValuesError = tooManyValuesError
 
 func NewMaxedCountActionTracker(actionKey string) ActionTracker {
 	ati := &actionTrackerImpl{actions: make(map[string]*actionAverage)}

@@ -7,6 +7,7 @@ import (
 )
 
 const maxUint = ^uint(0)
+const tooManyValuesError = "can't continue to track action, too many values have been added to track"
 
 //ActionTracker is the interface for an actionTracker
 type ActionTracker interface {
@@ -33,7 +34,7 @@ func (ati *actionTrackerImpl) AddAction(key string, value float64) error {
 	if _, exists := ati.actions[key]; !exists {
 		ati.actions[key] = &actionAverage{}
 	} else if ati.actions[key].count == maxUint {
-		return errors.New("can't continue to track action, too many values have been added to track")
+		return errors.New(tooManyValuesError)
 	}
 
 	ati.actions[key].count++
