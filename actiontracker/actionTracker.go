@@ -1,9 +1,12 @@
 package actiontracker
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 )
+
+const maxUint = ^uint(0)
 
 //ActionTracker is the interface for an actionTracker
 type ActionTracker interface {
@@ -11,15 +14,15 @@ type ActionTracker interface {
 	GetStats() string
 }
 
-type item struct {
+type actionAverage struct {
 	value float64
-	count uint
+	Count uint //Count is exported soley for mocking purposes. Acceptable because actionAverage is not exported.
 }
 
 //actionTrackerImpl is the implementation of the interface
 type actionTrackerImpl struct {
 	sync.RWMutex
-	dataStore map[string]item
+	Actions map[string]*actionAverage //Actions is exported soley for mocking purposes. Acceptable because actionTrackerImpl is not exported.
 }
 
 //AddAction will add an action
@@ -27,10 +30,14 @@ func (ati *actionTrackerImpl) AddAction(key string, value float64) error {
 	ati.Lock()
 	defer ati.Unlock()
 
-	currentItem := ati.dataStore[key]
-	currentItem.value = ((float64(currentItem.count) * currentItem.value) + value) / float64(currentItem.count+1)
-	currentItem.count++
-	ati.dataStore[key] = currentItem
+	if _, exists := ati.Actions[key]; !exists {
+		ati.Actions[key] = &actionAverage{}
+	} else if ati.Actions[key].Count == maxUint {
+		return errors.New("can't continue to track action, too many values have been added to track")
+	}
+
+	ati.Actions[key].Count++
+	ati.Actions[key].value = ati.Actions[key].value + (value-ati.Actions[key].value)/float64(ati.Actions[key].Count)
 	return nil
 }
 
@@ -40,13 +47,13 @@ func (ati *actionTrackerImpl) GetStats() string {
 	ati.RLock()
 	defer ati.RUnlock()
 
-	for itemName, theItem := range ati.dataStore {
-		retString += fmt.Sprintf("key:%s value:%v\n", itemName, theItem.value)
+	for actionAverageName, theactionAverage := range ati.Actions {
+		retString += fmt.Sprintf("key:%s value:%v\n", actionAverageName, theactionAverage.value)
 	}
 	return retString
 }
 
 //New will create a new ActionTracker
 func New() ActionTracker {
-	return &actionTrackerImpl{dataStore: make(map[string]item)}
+	return &actionTrackerImpl{Actions: make(map[string]*actionAverage)}
 }
