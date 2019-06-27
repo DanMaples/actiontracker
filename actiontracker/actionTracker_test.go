@@ -36,14 +36,13 @@ func TestActionTrackerConcurencey(t *testing.T) {
 }
 
 func TestMaxActionsHaveBeenAddedReturnsError(t *testing.T) {
-	mockAverage := &actiontracker.ActionAverage{Count: actiontracker.MaxUint - 1}
-	mockTracker := &actiontracker.ActionTrackerImpl{Actions: map[string]*actiontracker.ActionAverage{"key": mockAverage}}
-
-	err := mockTracker.AddAction("key", 1)
+	actionName := "jump"
+	tracker := actiontracker.NewMaxedCountActionTracker(actionName)
+	err := tracker.AddAction(actionName, 1)
 	if err != nil {
 		t.Fatalf("recieved unexpected err: %+v", err)
 	}
-	err = mockTracker.AddAction("key", 1)
+	err = tracker.AddAction(actionName, 1)
 	if err == nil {
 		t.Fatalf("did not recieve error when one was expected")
 	}

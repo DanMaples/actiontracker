@@ -16,13 +16,13 @@ type ActionTracker interface {
 
 type actionAverage struct {
 	value float64
-	Count uint //Count is exported soley for mocking purposes. Acceptable because actionAverage is not exported.
+	count uint
 }
 
 //actionTrackerImpl is the implementation of the interface
 type actionTrackerImpl struct {
 	sync.RWMutex
-	Actions map[string]*actionAverage //Actions is exported soley for mocking purposes. Acceptable because actionTrackerImpl is not exported.
+	actions map[string]*actionAverage
 }
 
 //AddAction will add an action
@@ -30,14 +30,14 @@ func (ati *actionTrackerImpl) AddAction(key string, value float64) error {
 	ati.Lock()
 	defer ati.Unlock()
 
-	if _, exists := ati.Actions[key]; !exists {
-		ati.Actions[key] = &actionAverage{}
-	} else if ati.Actions[key].Count == maxUint {
+	if _, exists := ati.actions[key]; !exists {
+		ati.actions[key] = &actionAverage{}
+	} else if ati.actions[key].count == maxUint {
 		return errors.New("can't continue to track action, too many values have been added to track")
 	}
 
-	ati.Actions[key].Count++
-	ati.Actions[key].value = ati.Actions[key].value + (value-ati.Actions[key].value)/float64(ati.Actions[key].Count)
+	ati.actions[key].count++
+	ati.actions[key].value = ati.actions[key].value + (value-ati.actions[key].value)/float64(ati.actions[key].count)
 	return nil
 }
 
@@ -47,13 +47,13 @@ func (ati *actionTrackerImpl) GetStats() string {
 	ati.RLock()
 	defer ati.RUnlock()
 
-	for actionAverageName, theactionAverage := range ati.Actions {
-		retString += fmt.Sprintf("key:%s value:%v\n", actionAverageName, theactionAverage.value)
+	for actionAverageName, theActionAverage := range ati.actions {
+		retString += fmt.Sprintf("key:%s value:%v\n", actionAverageName, theActionAverage.value)
 	}
 	return retString
 }
 
 //New will create a new ActionTracker
 func New() ActionTracker {
-	return &actionTrackerImpl{Actions: make(map[string]*actionAverage)}
+	return &actionTrackerImpl{actions: make(map[string]*actionAverage)}
 }
