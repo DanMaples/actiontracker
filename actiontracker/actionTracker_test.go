@@ -23,11 +23,11 @@ func TestActionTrackerConcurencey(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			tracker.AddAction("jump", 100)
+			tracker.AddAction(`{"action":"jump", "time":100}`)
 			tracker.GetStats()
-			tracker.AddAction("run", 75)
+			tracker.AddAction(`{"action":"run", "time":75}`)
 			tracker.GetStats()
-			tracker.AddAction("jump", 200)
+			tracker.AddAction(`{"action":"jump", "time":200}`)
 		}()
 	}
 	wg.Wait()
@@ -35,14 +35,40 @@ func TestActionTrackerConcurencey(t *testing.T) {
 	t.Logf(tracker.GetStats())
 }
 
+func TestInputValidation(t *testing.T) {
+	var testCases = []struct {
+		name        string
+		input       string
+		expectError bool
+	}{
+		{"properlyFormatedJSONReturnsNoError", `{"action":"jump", "time":100}`, false},
+		{"improperlyFormatedJSONReturnsAnError", `"action":"jump", "time":100}`, true},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			tracker := actiontracker.New()
+			err := tracker.AddAction(testCase.input)
+			if testCase.expectError {
+				if err == nil {
+					t.Fatal("Expected an error to be returned, but none was.")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("No error was expected, but got error: %+v", err)
+				}
+			}
+		})
+	}
+}
+
 func TestMaxActionsHaveBeenAddedReturnsError(t *testing.T) {
 	actionName := "jump"
 	tracker := actiontracker.NewMaxedCountActionTracker(actionName)
-	err := tracker.AddAction(actionName, 1)
+	err := tracker.AddAction(`{"action":"jump", "time":100}`)
 	if err != nil {
 		t.Fatalf("recieved unexpected err: %+v", err)
 	}
-	err = tracker.AddAction(actionName, 1)
+	err = tracker.AddAction(`{"action":"jump", "time":100}`)
 	if actiontracker.TooManyValuesError != err.Error() {
 		t.Fatalf("expected error of '%s', but recieved '%s' instead",
 			actiontracker.TooManyValuesError,

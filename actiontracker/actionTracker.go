@@ -1,6 +1,7 @@
 package actiontracker
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -11,10 +12,23 @@ const tooManyValuesError = "can't continue to track action, too many values have
 
 //ActionTracker is the interface for an actionTracker
 type ActionTracker interface {
-	AddAction(key string, value float64) error
+	AddAction(string) error
 	GetStats() string
 }
 
+//actionInput is a struct used to parse raw json into
+type actionInput struct {
+	Action string  `json:"action"`
+	Time   float64 `json:"time"`
+}
+
+//statsOutput is a struct used to parse output data into json
+type statsOutput struct {
+	Action string  `json:"action"`
+	Avg    float64 `json:"avg"`
+}
+
+//actionAverage is a stuct used to keep a running average of an action
 type actionAverage struct {
 	value float64
 	count uint
@@ -27,31 +41,36 @@ type actionTrackerImpl struct {
 }
 
 //AddAction will add an action
-func (ati *actionTrackerImpl) AddAction(key string, value float64) error {
+func (ati *actionTrackerImpl) AddAction(rawInput string) error {
+	var parsedInput actionInput
+	if err := json.Unmarshal([]byte(rawInput), &parsedInput); err != nil {
+		return err
+	}
 	ati.Lock()
 	defer ati.Unlock()
-
-	if _, exists := ati.actions[key]; !exists {
-		ati.actions[key] = &actionAverage{}
-	} else if ati.actions[key].count == maxUint {
+	if _, exists := ati.actions[parsedInput.Action]; !exists {
+		ati.actions[parsedInput.Action] = &actionAverage{}
+	} else if ati.actions[parsedInput.Action].count == maxUint {
 		return errors.New(tooManyValuesError)
 	}
-
-	ati.actions[key].count++
-	ati.actions[key].value = ati.actions[key].value + (value-ati.actions[key].value)/float64(ati.actions[key].count)
+	ati.actions[parsedInput.Action].count++
+	ati.actions[parsedInput.Action].value = ati.actions[parsedInput.Action].value + (parsedInput.Time-ati.actions[parsedInput.Action].value)/float64(ati.actions[parsedInput.Action].count)
 	return nil
 }
 
 //GetStats will get the stats
 func (ati *actionTrackerImpl) GetStats() string {
-	retString := ""
+	output := make([]*statsOutput, 0)
 	ati.RLock()
-	defer ati.RUnlock()
-
 	for actionAverageName, theActionAverage := range ati.actions {
-		retString += fmt.Sprintf("key:%s value:%v\n", actionAverageName, theActionAverage.value)
+		output = append(output, &statsOutput{Action: actionAverageName, Avg: theActionAverage.value})
 	}
-	return retString
+	ati.RUnlock()
+	statsBytes, err := json.Marshal(output)
+	if err != nil {
+		panic(fmt.Sprintf("programming error detected: %+v", err))
+	}
+	return string(statsBytes)
 }
 
 //New will create a new ActionTracker
