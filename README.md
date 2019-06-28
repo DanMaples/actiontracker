@@ -23,6 +23,10 @@ The ActionFormatter interface has two methods:
 
     OutputFormatter(v interface{}) ([]byte, error)
 
+# To Use
+- On a system with GO installed, run "go get github.com/DanMaples/actiontracker" to download the code.
+- To run the unit tests for this library, run "go test -v -race" from the root directory.
+- import the code into your code like the following example
 
 # Example
 The following example:
@@ -54,11 +58,11 @@ would produce the following output:
 ```
 
 # Notes
-- Output is rounded to the nearest 3 decimal places.
 - This library can make use of custom input/output parsers if you decide to use something other than JSON.
 - This library is safe for concurrent use.
-- To run the unit tests for this library, run "go test -v -race" from the root directory.
+- This library does not use any libraries not included in the standard GO libraries.
 - Output from GetStats() will be sorted alphabetically by action name.
+- Output is rounded to the nearest 3 decimal places.
 
 # Developer Considerations
 - When authoring this library, a decision had to be made betwen:
