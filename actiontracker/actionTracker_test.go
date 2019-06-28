@@ -1,6 +1,7 @@
 package actiontracker_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"testing"
@@ -9,25 +10,27 @@ import (
 )
 
 func TestActionTrackerKeepsCorrectAverage(t *testing.T) {
-	tracker := actiontracker.New()
+	tracker := actiontracker.NewWithJSONActionFormatter()
 	tracker.AddAction(`{"action":"jump", "time":100}`)
 	tracker.AddAction(`{"action":"run", "time":100}`)
 	tracker.AddAction(`{"action":"jump", "time":200}`)
 	tracker.AddAction(`{"action":"run", "time":0}`)
 	tracker.AddAction(`{"action":"run", "time":50}`)
 	tracker.AddAction(`{"action":"jump", "time":300}`)
+	tracker.AddAction(`{"action":"swim", "time":3.69}`)
+	tracker.AddAction(`{"action":"swim", "time":2}`)
 
 	actualStats := tracker.GetStats()
-	const expectedStats = `[{"action":"jump","avg":200},{"action":"run","avg":50}]`
+	const expectedStats = `[{"action":"jump","avg":200},{"action":"run","avg":50},{"action":"swim","avg":2.845}]`
 	if expectedStats != actualStats {
 		t.Fatalf("expected stats : %s did not match actual stats : %s", expectedStats, actualStats)
 	}
 }
 
 func TestActionTrackerConcurencey(t *testing.T) {
-	tracker := actiontracker.New()
+	tracker := actiontracker.NewWithJSONActionFormatter()
 	wg := sync.WaitGroup{}
-	for count := 0; count < 10; count++ {
+	for count := 0; count < 1000; count++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -39,11 +42,14 @@ func TestActionTrackerConcurencey(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	//TODO: check report is correct - need to figure out rounding first though...
-	t.Logf(tracker.GetStats())
+	actualStats := tracker.GetStats()
+	const expectedStats = `[{"action":"jump","avg":150},{"action":"run","avg":75}]`
+	if expectedStats != actualStats {
+		t.Fatalf("expected stats : %s did not match actual stats : %s", expectedStats, actualStats)
+	}
 }
 
-func TestInputValidation(t *testing.T) {
+func TestAddActionJSONInputValidation(t *testing.T) {
 	var testCases = []struct {
 		name        string
 		input       string
@@ -54,38 +60,42 @@ func TestInputValidation(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			tracker := actiontracker.New()
+			tracker := actiontracker.NewWithJSONActionFormatter()
 			err := tracker.AddAction(testCase.input)
-			if testCase.expectError {
-				if err == nil {
-					t.Fatal("Expected an error to be returned, but none was.")
-				}
-			} else {
-				if err != nil {
-					t.Fatalf("No error was expected, but got error: %+v", err)
-				}
+			if testCase.expectError && err == nil {
+				t.Fatal("Expected an error to be returned, but none was.")
+			}
+			if !testCase.expectError && err != nil {
+				t.Fatalf("No error was expected, but got error: %+v", err)
 			}
 		})
 	}
 }
 
-func TestGetStatsPanicsIfJSONIsUnmarshallable(t *testing.T) {
-	oldMarshalJSON := *actiontracker.MarshalJSON
-	defer func() { *actiontracker.MarshalJSON = oldMarshalJSON }()
-	*actiontracker.MarshalJSON = func(interface{}) ([]byte, error) { return nil, fmt.Errorf("I had an error") }
+type marshalErrorFormatter struct{}
+
+func (mef marshalErrorFormatter) InputFormatter(data []byte, v interface{}) error {
+	return json.Unmarshal(data, v)
+}
+
+func (mef marshalErrorFormatter) OutputFormatter(v interface{}) ([]byte, error) {
+	return nil, fmt.Errorf("I had an error")
+}
+
+func TestGetStatsPanicsIfActionsAreUnmarshallable(t *testing.T) {
 	defer func() {
 		recoveryValue := recover()
 		if recoveryValue == nil {
 			t.Fatal("GetStats did not convert error to panic")
 		}
 	}()
-	tracker := actiontracker.New()
+	tracker := actiontracker.NewWithCustomActionFormatter(marshalErrorFormatter{})
 	tracker.GetStats()
 }
 
 func TestMaxActionsHaveBeenAddedReturnsError(t *testing.T) {
 	actionName := "jump"
-	tracker := actiontracker.NewMaxedCountActionTracker(actionName)
+	tracker := actiontracker.NewMaxedCountJSONActionTracker(actionName)
 	err := tracker.AddAction(`{"action":"jump", "time":100}`)
 	if err != nil {
 		t.Fatalf("recieved unexpected err: %+v", err)

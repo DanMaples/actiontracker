@@ -1,9 +1,9 @@
 package actiontracker
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"sync"
 )
@@ -11,42 +11,44 @@ import (
 const maxUint = ^uint(0)
 const tooManyValuesError = "can't continue to track action, too many values have been added to track"
 
-var marshalJSON = json.Marshal
-
 //ActionTracker is the interface for an actionTracker
 type ActionTracker interface {
 	AddAction(string) error
 	GetStats() string
 }
 
-//addActionInput is a struct used to parse raw json into
-type addActionInput struct {
-	Action string  `json:"action"`
-	Time   float64 `json:"time"`
+//NewWithCustomActionFormatter will create and return
+//a new ActionTracker with the supplied ActionFormatter
+func NewWithCustomActionFormatter(af ActionFormatter) ActionTracker {
+	return &actionTrackerImpl{
+		ActionFormatter: af,
+		actions:         make(map[string]*actionAverage),
+	}
 }
 
-//getStatsOutput is a struct used to parse output data into json
-type getStatsOutput struct {
-	Action string  `json:"action"`
-	Avg    float64 `json:"avg"`
+//NewWithJSONActionFormatter will create and return
+//a new ActionTracker that takes JSON input
+func NewWithJSONActionFormatter() ActionTracker {
+	return NewWithCustomActionFormatter(NewJSONFormatter())
 }
 
-//actionAverage is a stuct used to keep a running average of an action
+//actionAverage is a stuct used to keep track of the average of an action
 type actionAverage struct {
 	value float64
 	count uint
 }
 
-//actionTrackerImpl is the implementation of the interface
+//actionTrackerImpl is the concrete implementation of the ActionTracker interface
 type actionTrackerImpl struct {
 	sync.RWMutex
 	actions map[string]*actionAverage
+	ActionFormatter
 }
 
-//AddAction will add an action
+//AddAction will parse the input and add the action to the tracker
 func (ati *actionTrackerImpl) AddAction(rawInput string) error {
-	var parsedInput addActionInput
-	if err := json.Unmarshal([]byte(rawInput), &parsedInput); err != nil {
+	var parsedInput StucturedActionInput
+	if err := ati.InputFormatter([]byte(rawInput), &parsedInput); err != nil {
 		return err
 	}
 	ati.Lock()
@@ -61,22 +63,27 @@ func (ati *actionTrackerImpl) AddAction(rawInput string) error {
 	return nil
 }
 
-//GetStats will get the stats
+//GetStats will return the stats about the actions from the tracker
+//Output will be rounded to the nearest 3 decimal places
 func (ati *actionTrackerImpl) GetStats() string {
-	output := make([]*getStatsOutput, 0)
+	output := make([]*StructuredStatsOutput, 0)
 	ati.RLock()
 	sortedActions := ati.getSortedActions()
 	for _, action := range sortedActions {
-		output = append(output, &getStatsOutput{Action: action, Avg: ati.actions[action].value})
+		output = append(output, &StructuredStatsOutput{
+			Action: action,
+			Avg:    math.Round(ati.actions[action].value*1000) / 1000, //round to the nearest 3 decimal places
+		})
 	}
 	ati.RUnlock()
-	statsBytes, err := marshalJSON(output)
+	statsBytes, err := ati.OutputFormatter(output)
 	if err != nil {
 		panic(fmt.Sprintf("programming error detected: %+v", err))
 	}
 	return string(statsBytes)
 }
 
+//getSortedActions will return a slice of actions, sorted alphabetically
 func (ati *actionTrackerImpl) getSortedActions() []string {
 	actions := make([]string, len(ati.actions))
 	index := 0
@@ -88,15 +95,9 @@ func (ati *actionTrackerImpl) getSortedActions() []string {
 	return actions
 }
 
-//New will create a new ActionTracker
-func New() ActionTracker {
-	return &actionTrackerImpl{actions: make(map[string]*actionAverage)}
-}
-
 /*TODO:
 read over problem statement again for details
 fill out readme
-figure out rounding
 rename a bunch of stuff
 improve comments
 */
