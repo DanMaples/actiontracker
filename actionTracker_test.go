@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/DanMaples/ActionTracker/actiontracker"
+	actiontracker "github.com/DanMaples/ActionTracker"
 )
 
 func TestActionTrackerKeepsCorrectAverage(t *testing.T) {
