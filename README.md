@@ -54,6 +54,8 @@ would produce the following output:
 ```
 
 # Notes
-This library uses float64 data types to keep track of the averages.
-
-Output is rounded to the nearest 3 decimal places.
+- This library uses float64 data types to keep track of the averages.
+- Output is rounded to the nearest 3 decimal places.
+- This library can make use of custom input/output parsers if you decide to use something other than JSON.
+- This library is safe for concurrent use.
+- To run the unit tests for this library, run "go test -v -race" from the root directory.
