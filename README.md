@@ -24,11 +24,14 @@ The ActionFormatter interface has two methods:
     OutputFormatter(v interface{}) ([]byte, error)
 
 
-# To Use
-In your imports section of your go file that will be using this library, include:
+# Example
+The following example:
 
 ```
-import "github.com/DanMaples/actiontracker"
+import (
+	"fmt"
+	"github.com/DanMaples/actiontracker"
+)
 
 func foo() {
     tracker := actiontracker.NewWithJSONActionFormatter()
@@ -42,6 +45,15 @@ func foo() {
     if err := tracker.AddAction(`{"action":"jump", "time":200}`); err != nil {
             //handle err
     }
-    statsString := tracker.GetStats()
+    fmt.Println(tracker.GetStats())
 }
 ```
+would produce the following output:
+```
+[{"action":"jump", "avg":150}, {"action":"run", "avg":75}]
+```
+
+# Notes
+This library uses float64 data types to keep track of the averages.
+
+Output is rounded to the nearest 3 decimal places.
