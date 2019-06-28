@@ -11,14 +11,30 @@ import (
 
 func TestActionTrackerKeepsCorrectAverage(t *testing.T) {
 	tracker := actiontracker.NewWithJSONActionFormatter()
-	tracker.AddAction(`{"action":"jump", "time":100}`)
-	tracker.AddAction(`{"action":"run", "time":100}`)
-	tracker.AddAction(`{"action":"jump", "time":200}`)
-	tracker.AddAction(`{"action":"run", "time":0}`)
-	tracker.AddAction(`{"action":"run", "time":50}`)
-	tracker.AddAction(`{"action":"jump", "time":300}`)
-	tracker.AddAction(`{"action":"swim", "time":3.69}`)
-	tracker.AddAction(`{"action":"swim", "time":2}`)
+	if err := tracker.AddAction(`{"action":"jump", "time":100}`); err != nil {
+		t.Fatalf("Received unexpected error from AddAction: %+v", err)
+	}
+	if err := tracker.AddAction(`{"action":"run", "time":100}`); err != nil {
+		t.Fatalf("Received unexpected error from AddAction: %+v", err)
+	}
+	if err := tracker.AddAction(`{"action":"jump", "time":200}`); err != nil {
+		t.Fatalf("Received unexpected error from AddAction: %+v", err)
+	}
+	if err := tracker.AddAction(`{"action":"run", "time":0}`); err != nil {
+		t.Fatalf("Received unexpected error from AddAction: %+v", err)
+	}
+	if err := tracker.AddAction(`{"action":"run", "time":50}`); err != nil {
+		t.Fatalf("Received unexpected error from AddAction: %+v", err)
+	}
+	if err := tracker.AddAction(`{"action":"jump", "time":300}`); err != nil {
+		t.Fatalf("Received unexpected error from AddAction: %+v", err)
+	}
+	if err := tracker.AddAction(`{"action":"swim", "time":3.69}`); err != nil {
+		t.Fatalf("Received unexpected error from AddAction: %+v", err)
+	}
+	if err := tracker.AddAction(`{"action":"swim", "time":2}`); err != nil {
+		t.Fatalf("Received unexpected error from AddAction: %+v", err)
+	}
 
 	actualStats := tracker.GetStats()
 	const expectedStats = `[{"action":"jump","avg":200},{"action":"run","avg":50},{"action":"swim","avg":2.845}]`
@@ -34,11 +50,17 @@ func TestActionTrackerConcurencey(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			tracker.AddAction(`{"action":"jump", "time":100}`)
+			if err := tracker.AddAction(`{"action":"jump", "time":100}`); err != nil {
+				t.Fatalf("Received unexpected error from AddAction: %+v", err)
+			}
 			tracker.GetStats()
-			tracker.AddAction(`{"action":"run", "time":75}`)
+			if err := tracker.AddAction(`{"action":"run", "time":75}`); err != nil {
+				t.Fatalf("Received unexpected error from AddAction: %+v", err)
+			}
 			tracker.GetStats()
-			tracker.AddAction(`{"action":"jump", "time":200}`)
+			if err := tracker.AddAction(`{"action":"jump", "time":200}`); err != nil {
+				t.Fatalf("Received unexpected error from AddAction: %+v", err)
+			}
 		}()
 	}
 	wg.Wait()
