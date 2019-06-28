@@ -3,7 +3,7 @@ package actiontracker
 //ActionFormatter defines an interface to format action inputs and outputs
 type ActionFormatter interface {
 	InputFormatter(data []byte, v interface{}) error
-	OutputFormatter(v interface{}) ([]byte, error)
+	OutputFormatter(v interface{}, prefix, indent string) ([]byte, error)
 }
 
 //StucturedActionInput is a struct used to parse raw action input into.

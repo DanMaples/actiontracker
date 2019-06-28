@@ -76,7 +76,7 @@ func (ati *actionTrackerImpl) GetStats() string {
 		})
 	}
 	ati.RUnlock()
-	statsBytes, err := ati.OutputFormatter(output)
+	statsBytes, err := ati.OutputFormatter(output, "", "    ")
 	if err != nil {
 		panic(fmt.Sprintf("programming error detected: %+v", err))
 	}
@@ -94,10 +94,3 @@ func (ati *actionTrackerImpl) getSortedActions() []string {
 	sort.Strings(actions)
 	return actions
 }
-
-/*TODO:
-read over problem statement again for details
-fill out readme
-rename a bunch of stuff
-improve comments
-*/

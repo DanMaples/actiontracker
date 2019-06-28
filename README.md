@@ -59,3 +59,4 @@ would produce the following output:
 - This library can make use of custom input/output parsers if you decide to use something other than JSON.
 - This library is safe for concurrent use.
 - To run the unit tests for this library, run "go test -v -race" from the root directory.
+- Output from GetStats() will be sorted alphabetically by action name.
