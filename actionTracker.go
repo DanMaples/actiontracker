@@ -76,7 +76,7 @@ func (ati *actionTrackerImpl) GetStats() string {
 		})
 	}
 	ati.RUnlock()
-	statsBytes, err := ati.OutputFormatter(output, "", "    ")
+	statsBytes, err := ati.OutputFormatter(output)
 	if err != nil {
 		panic(fmt.Sprintf("programming error detected: %+v", err))
 	}

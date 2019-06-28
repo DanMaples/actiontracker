@@ -16,6 +16,6 @@ func (jf JSONFormatter) InputFormatter(data []byte, v interface{}) error {
 }
 
 //OutputFormatter parses structs into JSON
-func (jf JSONFormatter) OutputFormatter(v interface{}, prefix, indent string) ([]byte, error) {
-	return json.MarshalIndent(v, prefix, indent)
+func (jf JSONFormatter) OutputFormatter(v interface{}) ([]byte, error) {
+	return json.Marshal(v)
 }

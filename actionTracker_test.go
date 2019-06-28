@@ -100,7 +100,7 @@ func (mef marshalErrorFormatter) InputFormatter(data []byte, v interface{}) erro
 	return json.Unmarshal(data, v)
 }
 
-func (mef marshalErrorFormatter) OutputFormatter(v interface{}, prefix, indent string) ([]byte, error) {
+func (mef marshalErrorFormatter) OutputFormatter(v interface{}) ([]byte, error) {
 	return nil, fmt.Errorf("I had an error")
 }
 
