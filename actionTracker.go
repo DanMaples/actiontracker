@@ -1,15 +1,12 @@
 package actiontracker
 
 import (
-	"errors"
 	"fmt"
-	"math"
 	"sort"
 	"sync"
 )
 
-const maxUint = ^uint(0)
-const tooManyValuesError = "can't continue to track action, too many values have been added to track"
+const defaultDecimalPlaces = 3
 
 //ActionTracker is the interface for an actionTracker
 type ActionTracker interface {
@@ -22,7 +19,7 @@ type ActionTracker interface {
 func NewWithCustomActionFormatter(af ActionFormatter) ActionTracker {
 	return &actionTrackerImpl{
 		ActionFormatter: af,
-		actions:         make(map[string]*actionAverage),
+		actions:         make(map[string]action),
 	}
 }
 
@@ -32,16 +29,10 @@ func NewWithJSONActionFormatter() ActionTracker {
 	return NewWithCustomActionFormatter(NewJSONFormatter())
 }
 
-//actionAverage is a stuct used to keep track of the average of an action
-type actionAverage struct {
-	value float64
-	count uint
-}
-
 //actionTrackerImpl is the concrete implementation of the ActionTracker interface
 type actionTrackerImpl struct {
 	sync.RWMutex
-	actions map[string]*actionAverage
+	actions map[string]action
 	ActionFormatter
 }
 
@@ -54,13 +45,9 @@ func (ati *actionTrackerImpl) AddAction(rawInput string) error {
 	ati.Lock()
 	defer ati.Unlock()
 	if _, exists := ati.actions[parsedInput.Action]; !exists {
-		ati.actions[parsedInput.Action] = &actionAverage{}
-	} else if ati.actions[parsedInput.Action].count == maxUint {
-		return errors.New(tooManyValuesError)
+		ati.actions[parsedInput.Action] = newAction()
 	}
-	ati.actions[parsedInput.Action].count++
-	ati.actions[parsedInput.Action].value = ati.actions[parsedInput.Action].value + (parsedInput.Time-ati.actions[parsedInput.Action].value)/float64(ati.actions[parsedInput.Action].count)
-	return nil
+	return ati.actions[parsedInput.Action].add(parsedInput.Time)
 }
 
 //GetStats will return the stats about the actions from the tracker
@@ -72,7 +59,7 @@ func (ati *actionTrackerImpl) GetStats() string {
 	for _, action := range sortedActions {
 		output = append(output, &StructuredStatsOutput{
 			Action: action,
-			Avg:    math.Round(ati.actions[action].value*1000) / 1000, //round to the nearest 3 decimal places
+			Avg:    ati.actions[action].getRoundedAvg(defaultDecimalPlaces),
 		})
 	}
 	ati.RUnlock()

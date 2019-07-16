@@ -9,8 +9,8 @@ const TooManyValuesError = tooManyValuesError
 func NewMaxedCountJSONActionTracker(actionKey string) ActionTracker {
 	ati := &actionTrackerImpl{
 		ActionFormatter: NewJSONFormatter(),
-		actions:         make(map[string]*actionAverage),
+		actions:         make(map[string]action),
 	}
-	ati.actions[actionKey] = &actionAverage{count: maxUint - 1}
+	ati.actions[actionKey] = &actionImpl{count: maxUint - 1}
 	return ati
 }
