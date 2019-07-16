@@ -51,16 +51,15 @@ func (ati *actionTrackerImpl) AddAction(rawInput string) error {
 }
 
 //GetStats will return the stats about the actions from the tracker
-//Output will be rounded to the nearest 3 decimal places
 func (ati *actionTrackerImpl) GetStats() string {
-	output := make([]*StructuredStatsOutput, 0)
 	ati.RLock()
+	output := make([]*StructuredStatsOutput, len(ati.actions))
 	sortedActions := ati.getSortedActions()
-	for _, action := range sortedActions {
-		output = append(output, &StructuredStatsOutput{
+	for index, action := range sortedActions {
+		output[index] = &StructuredStatsOutput{
 			Action: action,
 			Avg:    ati.actions[action].getRoundedAvg(defaultDecimalPlaces),
-		})
+		}
 	}
 	ati.RUnlock()
 	statsBytes, err := ati.OutputFormatter(output)
